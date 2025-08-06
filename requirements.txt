@@ -1,0 +1,10 @@
+streamlit
+langchain
+openai
+streamlit-authenticator
+pandas
+sweetviz
+ydata-profiling
+python-dotenv
+schedule
+
