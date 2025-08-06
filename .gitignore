@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+*.ipynb_checkpoints
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+.Python
+
+# Environment Variables
+.env
+.env.*
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/config.toml
+
+# Auth/Secrets
+config.toml
+*.key
+*.pem
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Reports / Logs / Outputs
+reports/
+*.pdf
+*.html
+*.log
+
+# Editor junk
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Docker
+*.container
+*.pid
+docker-compose.override.yml
+
+# CI/CD artifacts
+.github/workflows/__pycache__/
+
+# Data files
+data/example.csv
+data/*.xlsx
+data/*.csv
+
+# Profiling reports
+*.profile
+*.cprofile
+
+# Pytest
+.pytest_cache/
+coverage/
+htmlcov/
+.cache/
