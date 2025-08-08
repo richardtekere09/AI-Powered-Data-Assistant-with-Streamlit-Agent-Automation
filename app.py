@@ -5,7 +5,7 @@ import os
 from langchain_experimental.agents.agent_toolkits.pandas.base import (
     create_pandas_dataframe_agent,
 )
-from langchain_openai import OpenAI
+from langchain_groq import ChatGroq  
 from memory.chat_memory import get_memory
 from utils.code_executor import safe_exec
 import plotly.express as px
@@ -15,7 +15,7 @@ import time
 
 # Load environment variables
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Page config
 st.set_page_config(
@@ -52,7 +52,7 @@ if "analysis_count" not in st.session_state:
 
 # Header - simplified
 st.title("AI Data Assistant")
-st.caption("Advanced data analysis powered by artificial intelligence")
+st.caption("Advanced data analysis powered by Groq AI")
 
 # Sidebar - simplified
 with st.sidebar:
@@ -192,15 +192,28 @@ if st.session_state.df is not None:
             user_question = st.session_state.suggested_question
             del st.session_state.suggested_question
 
-        # Process analysis query
+        # Process analysis query - Updated Groq model
         if st.button("Analyze", type="primary") and user_question:
             with st.spinner("Processing analysis..."):
                 try:
+                    # Check API key first
+                    if not GROQ_API_KEY:
+                        st.error("❌ Please add GROQ_API_KEY to your .env file!")
+                        st.info("Get free API key at: https://console.groq.com/")
+                        st.stop()
+
                     # Progress indicator
                     progress_placeholder = st.empty()
                     progress_placeholder.info("Initializing AI agent...")
 
-                    llm = OpenAI(temperature=0, api_key=OPENAI_API_KEY)
+                    # Initialize Groq LLM with current model
+                    llm = ChatGroq(
+                        api_key=GROQ_API_KEY,
+                        model="llama-3.3-70b-versatile",  # Updated current model
+                        temperature=0,
+                    )
+
+                    # Create agent with Groq
                     memory = get_memory()
                     agent = create_pandas_dataframe_agent(
                         llm,
@@ -231,7 +244,9 @@ if st.session_state.df is not None:
 
                 except Exception as e:
                     st.error(f"Analysis error: {str(e)}")
-                    st.info("Please check your query and try again.")
+                    st.info(
+                        "💡 **Troubleshooting:**\n- Check GROQ_API_KEY in .env file\n- Try alternative model: `llama-3.1-8b-instant`"
+                    )
 
     with col2:
         # Analysis tools sidebar
@@ -297,9 +312,7 @@ else:
     # No data loaded - show welcome screen without empty columns
     # Welcome header
     st.markdown("### Welcome to AI Data Assistant")
-    st.markdown(
-        "Upload your dataset to begin advanced data analysis with AI assistance."
-    )
+    st.markdown("Upload your dataset to begin advanced data analysis with Groq AI.")
 
     st.markdown("---")
 
@@ -392,10 +405,9 @@ if st.session_state.chat_history:
         if st.button("Export History"):
             st.info("History export functionality available.")
 
-
 # Footer
 st.markdown("---")
 st.markdown(
-    '<p style="text-align: center; color: #95a5a6; font-size: 0.85rem;">AI Data Assistant | Powered by Advanced Analytics</p>',
+    '<p style="text-align: center; color: #95a5a6; font-size: 0.85rem;">AI Data Assistant | Powered by Groq AI 🚀</p>',
     unsafe_allow_html=True,
 )
