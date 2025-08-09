@@ -23,7 +23,7 @@ ENV/
 # Streamlit
 .streamlit/secrets.toml
 .streamlit/config.toml
-
+config.toml
 # Auth/Secrets
 config.toml
 *.key

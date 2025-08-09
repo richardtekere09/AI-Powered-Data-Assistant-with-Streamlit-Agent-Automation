@@ -12,6 +12,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import time
+from auth.login import get_authenticator
+
 
 # Load environment variables
 load_dotenv()
@@ -24,6 +26,25 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+# ---- Auth ----
+authenticator = get_authenticator()
+name, auth_status, username = authenticator.login(location="sidebar")
+
+if auth_status is False:
+    st.error("Username/password is incorrect")
+    st.stop()
+elif auth_status is None:
+    st.info("Please enter your username and password.")
+    st.stop()
+
+# Optional UI: logout button + welcome label
+col1, col2 = st.columns([1, 3])
+with col1:
+    authenticator.logout(location='sidebar')
+with col2:
+    st.caption(f"Welcome, **{name}**")
+
+# ---- Main App ----
 
 # Minimal CSS for better performance
 st.markdown(

@@ -7,4 +7,7 @@ sweetviz
 ydata-profiling
 python-dotenv
 schedule
-
+toml
+groq
+streamlit-authenticator==0.3.2 "passlib[bcrypt]" 
+langchain-groq
