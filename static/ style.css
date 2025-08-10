@@ -1,0 +1,703 @@
+/* Enhanced Professional CSS for Data Analytics App */
+
+/* Advanced Color Palette for Data Professionals */
+:root {
+    /* Primary Colors */
+    --background: #FAFBFC;
+    --surface: #FFFFFF;
+    --surface-elevated: #F8FAFC;
+
+    /* Text Colors */
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-tertiary: #94A3B8;
+    --text-inverse: #FFFFFF;
+
+    /* Brand Colors */
+    --primary-600: #2563EB;
+    --primary-700: #1D4ED8;
+    --primary-50: #EFF6FF;
+    --primary-100: #DBEAFE;
+
+    /* Accent Colors */
+    --accent-teal: #0891B2;
+    --accent-teal-light: #E6FFFA;
+    --accent-purple: #7C3AED;
+    --accent-purple-light: #F3E8FF;
+
+    /* Status Colors */
+    --success: #059669;
+    --success-light: #ECFDF5;
+    --warning: #D97706;
+    --warning-light: #FFFBEB;
+    --error: #DC2626;
+    --error-light: #FEF2F2;
+
+    /* Data Visualization Colors */
+    --chart-blue: #3B82F6;
+    --chart-green: #10B981;
+    --chart-purple: #8B5CF6;
+    --chart-orange: #F59E0B;
+    --chart-red: #EF4444;
+    --chart-indigo: #6366F1;
+
+    /* Shadows & Effects */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.15);
+
+    /* Border Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease-out;
+    --transition-base: 0.3s ease-out;
+    --transition-slow: 0.5s ease-out;
+}
+
+/* Base Styling with Enhanced Typography */
+.stApp {
+    background: linear-gradient(135deg, var(--background) 0%, #F1F5F9 100%);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Sophisticated Background Pattern */
+.stApp::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(circle at 25% 25%, rgba(37, 99, 235, 0.04) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(8, 145, 178, 0.04) 0%, transparent 50%),
+        linear-gradient(135deg, rgba(124, 58, 237, 0.02) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Hide Streamlit Branding */
+#MainMenu,
+footer,
+.stDeployButton {
+    visibility: hidden;
+}
+
+header {
+    visibility: hidden;
+}
+
+/* Premium Header Design */
+.main-header {
+    background: linear-gradient(135deg, var(--primary-600) 0%, var(--accent-teal) 100%);
+    padding: 3rem 2rem;
+    border-radius: var(--radius-xl);
+    margin-bottom: 2.5rem;
+    text-align: center;
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.main-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+}
+
+.main-header h1 {
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(135deg, #FFFFFF 0%, rgba(255, 255, 255, 0.8) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.main-header p {
+    font-size: clamp(1rem, 2.5vw, 1.375rem);
+    margin: 1rem 0 0 0;
+    opacity: 0.92;
+    font-weight: 400;
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Enhanced Welcome Card with Data Visualization Theme */
+.welcome-card {
+    background: var(--surface);
+    border: 1px solid #E2E8F0;
+    padding: 2.5rem;
+    border-radius: var(--radius-xl);
+    margin: 2.5rem auto;
+    max-width: 900px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    border-left: 5px solid var(--primary-600);
+    animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.welcome-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.08), transparent);
+    animation: shimmer 3s infinite;
+}
+
+.welcome-card::after {
+    content: '📊';
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-size: 1.5rem;
+    opacity: 0.3;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+.welcome-card h2 {
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+}
+
+.welcome-card p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1.125rem;
+    position: relative;
+    z-index: 1;
+    line-height: 1.7;
+}
+
+/* Professional Section Headers */
+.section-header {
+    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 3rem 0 2rem 0;
+    padding: 1.25rem 0;
+    border-bottom: 3px solid #F1F5F9;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-header::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--primary-600), var(--accent-teal));
+    border-radius: 2px;
+}
+
+.section-header::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(135deg, var(--primary-600), var(--accent-teal));
+    border-radius: 1.5px;
+}
+
+/* Advanced Feature Cards */
+.feature-card {
+    background: var(--surface);
+    border: 1px solid #E2E8F0;
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    margin: 1.25rem 0;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-600);
+    background: linear-gradient(135deg, var(--surface) 0%, var(--primary-50) 100%);
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-600), var(--accent-teal), var(--accent-purple));
+    transform: scaleX(0);
+    transition: transform var(--transition-base);
+    transform-origin: left;
+}
+
+.feature-card:hover::before {
+    transform: scaleX(1);
+}
+
+.feature-card h3,
+.feature-card h4 {
+    color: var(--text-primary);
+    margin-top: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.feature-card p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    font-size: 0.95rem;
+}
+
+/* Advanced Statistics Dashboard */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.stat-card {
+    background: var(--surface);
+    border: 1px solid #E2E8F0;
+    padding: 1.25rem 1rem;
+    border-radius: var(--radius-md);
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: var(--shadow-glow);
+    border-color: var(--primary-600);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-600);
+    transform: scaleX(0);
+    transition: transform var(--transition-base);
+}
+
+.stat-card:hover::before {
+    transform: scaleX(1);
+}
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+    transform: scale(0);
+    transition: transform var(--transition-slow);
+}
+
+.stat-card:hover::after {
+    transform: scale(1);
+}
+
+.stat-number {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 800;
+    color: var(--primary-600);
+    margin: 0 0 0.25rem 0;
+    line-height: 1.1;
+    transition: all var(--transition-base);
+    position: relative;
+    z-index: 1;
+}
+
+.stat-card:hover .stat-number {
+    color: var(--accent-teal);
+    transform: scale(1.05);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: relative;
+    z-index: 1;
+}
+
+/* Premium Upload Area with Data Processing Theme */
+.upload-area {
+    background: linear-gradient(135deg, var(--surface-elevated) 0%, var(--primary-50) 100%);
+    border: 2px dashed #CBD5E1;
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem;
+    text-align: center;
+    margin: 2rem 0;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-area::before {
+    content: '📈';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    opacity: 0.3;
+}
+
+.upload-area:hover {
+    border-color: var(--primary-600);
+    background: linear-gradient(135deg, var(--primary-50) 0%, var(--accent-purple-light) 100%);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+.upload-area::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(37, 99, 235, 0.08) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform var(--transition-slow);
+}
+
+.upload-area:hover::after {
+    transform: translateX(100%);
+}
+
+.upload-area h4 {
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    font-size: 1.375rem;
+    font-weight: 700;
+}
+
+.upload-area p {
+    color: var(--text-secondary);
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* Enhanced Button System */
+.stButton>button {
+    background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-base);
+    border: 1px solid transparent;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.stButton>button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left var(--transition-slow);
+}
+
+.stButton>button:hover {
+    background: linear-gradient(135deg, var(--primary-700) 0%, var(--accent-teal) 100%);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: var(--shadow-glow);
+}
+
+.stButton>button:hover::before {
+    left: 100%;
+}
+
+.stButton>button:active {
+    transform: translateY(-1px) scale(1.01);
+}
+
+/* Premium EDA Button */
+.eda-button-container .stButton>button {
+    background: linear-gradient(135deg, var(--primary-600) 0%, var(--accent-teal) 50%, var(--accent-purple) 100%) !important;
+    color: var(--text-inverse) !important;
+    border: none !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 1.5rem 2rem !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    width: 100% !important;
+    height: 90px !important;
+    box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3) !important;
+    transition: all var(--transition-base) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.025em !important;
+}
+
+.eda-button-container .stButton>button:hover {
+    transform: translateY(-4px) scale(1.02) !important;
+    box-shadow: 0 12px 40px rgba(37, 99, 235, 0.4) !important;
+    background: linear-gradient(135deg, var(--primary-700) 0%, var(--accent-teal) 50%, var(--accent-purple) 100%) !important;
+}
+
+/* Professional Sidebar */
+.css-1d391kg {
+    background: linear-gradient(180deg, var(--text-primary) 0%, #0F172A 100%) !important;
+}
+
+.css-1d391kg .stMarkdown {
+    color: var(--text-inverse) !important;
+}
+
+.css-1d391kg .stMarkdown h1,
+.css-1d391kg .stMarkdown h2,
+.css-1d391kg .stMarkdown h3,
+.css-1d391kg .stMarkdown h4 {
+    color: var(--text-inverse) !important;
+    font-weight: 700 !important;
+}
+
+/* Enhanced Form Styling */
+.stForm {
+    background: var(--surface);
+    border: 1px solid #E2E8F0;
+    padding: 2.5rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-base);
+}
+
+.stForm:hover {
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-600);
+}
+
+/* Professional Input Fields */
+.stTextInput>div>div>input,
+.stTextArea textarea {
+    border: 2px solid #E2E8F0 !important;
+    border-radius: var(--radius-md) !important;
+    background: var(--surface) !important;
+    transition: all var(--transition-base) !important;
+    font-size: 0.95rem !important;
+    padding: 0.875rem !important;
+}
+
+.stTextInput>div>div>input:focus,
+.stTextArea textarea:focus {
+    border-color: var(--primary-600) !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+    outline: none !important;
+}
+
+/* Enhanced Status Messages */
+.stSuccess {
+    background: linear-gradient(135deg, var(--success-light) 0%, #F0FDF4 100%) !important;
+    border: 2px solid var(--success) !important;
+    color: var(--success) !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 600 !important;
+}
+
+.stError {
+    background: linear-gradient(135deg, var(--error-light) 0%, #FEF2F2 100%) !important;
+    border: 2px solid var(--error) !important;
+    color: var(--error) !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 600 !important;
+}
+
+.stInfo {
+    background: linear-gradient(135deg, var(--primary-50) 0%, #EFF6FF 100%) !important;
+    border: 2px solid var(--primary-600) !important;
+    color: var(--primary-600) !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 600 !important;
+}
+
+/* Data Analysis Results */
+.analysis-result {
+    background: var(--surface);
+    border: 1px solid #E2E8F0;
+    border-left: 5px solid var(--accent-teal);
+    padding: 2.5rem;
+    margin: 2rem 0;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.analysis-result::before {
+    content: '🎯';
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-size: 1.25rem;
+    opacity: 0.4;
+}
+
+.analysis-result h4 {
+    color: var(--text-primary);
+    margin-top: 0;
+    font-weight: 700;
+}
+
+/* Interactive History with Data Theme */
+.history-item {
+    background: var(--surface);
+    border: 1px solid #E2E8F0;
+    border-radius: var(--radius-md);
+    margin: 1.25rem 0;
+    transition: all var(--transition-base);
+    overflow: hidden;
+    position: relative;
+}
+
+.history-item::before {
+    content: '📊';
+    position: absolute;
+    top: 0.75rem;
+    right: 1rem;
+    font-size: 1rem;
+    opacity: 0.3;
+    z-index: 1;
+}
+
+.history-item:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-600);
+    transform: translateY(-2px);
+}
+
+/* Enhanced Progress Bar */
+.stProgress .st-bo {
+    background: linear-gradient(90deg, var(--primary-600), var(--accent-teal)) !important;
+    border-radius: 10px !important;
+    height: 8px !important;
+}
+
+/* Responsive Design Improvements */
+@media (max-width: 768px) {
+    .main-header {
+        padding: 2rem 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .welcome-card {
+        padding: 2rem;
+        margin: 1.5rem auto;
+    }
+
+    .stats-container {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .stat-card {
+        padding: 1rem 0.75rem;
+    }
+
+    .upload-area {
+        padding: 2rem 1rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #0F172A;
+        --surface: #1E293B;
+        --surface-elevated: #334155;
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-tertiary: #64748B;
+    }
+}

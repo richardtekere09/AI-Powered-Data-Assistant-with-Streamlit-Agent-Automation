@@ -1,18 +1,22 @@
+"""
+AI Data Assistant - Main Application
+A professional data analysis platform with AI-powered insights.
+"""
+
 import streamlit as st
 import pandas as pd
 from dotenv import load_dotenv
 import os
-from langchain_experimental.agents.agent_toolkits.pandas.base import (
-    create_pandas_dataframe_agent,
-)
-from langchain_groq import ChatGroq
-from memory.chat_memory import get_memory
-from utils.code_executor import safe_exec
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime
-import time
+
+# Import our custom modules
 from auth.login import get_authenticator
+from utils.code_executor import (
+    create_analysis_agent,
+    run_analysis,
+    generate_suggestions,
+)
+from utils.charts import create_stats_visualization
+from utils.report_generator import generate_eda_report
 
 # Load environment variables
 load_dotenv()
@@ -26,573 +30,129 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Professional CSS with dynamic features
-st.markdown(
-    """
-<style>
-    /* Color palette */
-    :root {
-        --background: #F8FAFC;
-        --primary-text: #1E293B;
-        --secondary-text: #64748B;
-        --primary-accent: #2563EB;
-        --secondary-accent: #0D9488;
-        --success: #16A34A;
-        --warning: #F59E0B;
-        --error: #DC2626;
-        --sidebar-bg: #1E293B;
-        --sidebar-text: #F8FAFC;
-        --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
 
-    /* Base styling */
-    .stApp {
-        background-color: var(--background);
-        color: var(--primary-text);
-    }
-
-    /* Dynamic background */
-    .stApp::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: 
-            radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.03) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(13, 148, 136, 0.03) 0%, transparent 50%);
-        pointer-events: none;
-        z-index: -1;
-    }
-
-    /* Hide default streamlit elements but keep sidebar toggle */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    
-    /* Main header */
-    .main-header {
-        background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
-        padding: 2.5rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-        text-align: center;
-        color: white;
-        box-shadow: var(--card-shadow);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .main-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-        pointer-events: none;
-    }
-    
-    .main-header h1 {
-        font-size: 2.75rem;
-        margin: 0;
-        font-weight: 700;
-        letter-spacing: -0.025em;
-        position: relative;
-        z-index: 1;
-    }
-    
-    .main-header p {
-        font-size: 1.25rem;
-        margin: 0.75rem 0 0 0;
-        opacity: 0.95;
-        font-weight: 400;
-        position: relative;
-        z-index: 1;
-    }
-
-    /* Animated welcome card for authenticated users */
-    .welcome-card {
-        background: linear-gradient(135deg, white, #F8FAFC);
-        border: 1px solid #E2E8F0;
-        padding: 2rem;
-        border-radius: 16px;
-        margin: 2rem auto;
-        max-width: 800px;
-        text-align: center;
-        box-shadow: var(--card-shadow);
-        border-left: 4px solid var(--primary-accent);
-        animation: slideInUp 0.6s ease-out;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .welcome-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.1), transparent);
-        animation: shimmer 2s infinite;
-    }
-    
-    @keyframes slideInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
+# Load CSS styles
+def load_css():
+    """Load CSS styles from external file."""
+    try:
+        with open(
+            "/Users/richard/AI-Powered-Data-Assistant-with-Streamlit-Agent-Automation/static/ style.css"
+        ) as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        # Fallback to inline CSS if file not found
+        st.markdown(
+            """
+        <style>
+        :root {
+            --background: #F8FAFC;
+            --primary-text: #1E293B;
+            --secondary-text: #64748B;
+            --primary-accent: #2563EB;
+            --secondary-accent: #0D9488;
+            --success: #16A34A;
+            --warning: #F59E0B;
+            --error: #DC2626;
+            --sidebar-bg: #1E293B;
+            --sidebar-text: #F8FAFC;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        to {
-            opacity: 1;
-            transform: translateY(0);
+        .stApp { background-color: var(--background); color: var(--primary-text); }
+        .welcome-card {
+            background: linear-gradient(135deg, white, #F8FAFC);
+            border: 1px solid #E2E8F0;
+            padding: 2rem;
+            border-radius: 16px;
+            margin: 2rem auto;
+            max-width: 800px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid var(--primary-accent);
+            animation: slideInUp 0.6s ease-out;
         }
-    }
-    
-    @keyframes shimmer {
-        0% { left: -100%; }
-        100% { left: 100%; }
-    }
-    
-    .welcome-card h2 {
-        color: var(--primary-text);
-        margin: 0 0 0.75rem 0;
-        font-size: 1.75rem;
-        font-weight: 600;
-        position: relative;
-        z-index: 1;
-    }
-    
-    .welcome-card p {
-        color: var(--secondary-text);
-        margin: 0;
-        font-size: 1.125rem;
-        position: relative;
-        z-index: 1;
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .section-header {
+            font-size: 1.375rem;
+            font-weight: 600;
+            color: var(--primary-text);
+            margin: 2.5rem 0 1.5rem 0;
+            padding: 1rem 0;
+            border-bottom: 2px solid #E2E8F0;
+            position: relative;
+        }
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: var(--primary-accent);
+        }
+        </style>
+        """,
+            unsafe_allow_html=True,
+        )
+
+
+# Load styles
+load_css()
+
+
+def initialize_session_state():
+    """Initialize all session state variables."""
+    session_vars = {
+        "df": None,
+        "chat_history": [],
+        "analysis_count": 0,
+        "processed_files": set(),
+        "current_user": None,
+        "stats_rendered": False,
+        "show_embedded": False,
+        "show_summary": False,
+        "generate_eda": False,
+        "quick_viz": False,
     }
 
-    /* Section headers */
-    .section-header {
-        font-size: 1.375rem;
-        font-weight: 600;
-        color: var(--primary-text);
-        margin: 2.5rem 0 1.5rem 0;
-        padding: 1rem 0;
-        border-bottom: 2px solid #E2E8F0;
-        position: relative;
-    }
-    
-    .section-header::after {
-        content: '';
-        position: absolute;
-        bottom: -2px;
-        left: 0;
-        width: 60px;
-        height: 2px;
-        background: var(--primary-accent);
-    }
+    for var, default_value in session_vars.items():
+        if var not in st.session_state:
+            st.session_state[var] = default_value
 
-    /* Cards with hover effects */
-    .feature-card {
-        background: white;
-        border: 1px solid #E2E8F0;
-        padding: 1.75rem;
-        border-radius: 16px;
-        margin: 1rem 0;
-        box-shadow: var(--card-shadow);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--hover-shadow);
-        border-color: var(--primary-accent);
-    }
-    
-    .feature-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--primary-accent), var(--secondary-accent));
-        transform: scaleX(0);
-        transition: transform 0.3s ease;
-    }
-    
-    .feature-card:hover::before {
-        transform: scaleX(1);
-    }
-    
-    .feature-card h3, .feature-card h4 {
-        color: var(--primary-text);
-        margin-top: 0;
-    }
-    
-    .feature-card p {
-        color: var(--secondary-text);
-        line-height: 1.6;
-    }
 
-    /* Stats container with animations */
-    .stats-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 1.25rem;
-        margin: 2rem 0;
-    }
-    
-    .stat-card {
-        background: white;
-        border: 1px solid #E2E8F0;
-        padding: 1.5rem;
-        border-radius: 16px;
-        text-align: center;
-        box-shadow: var(--card-shadow);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: var(--hover-shadow);
-        border-color: var(--primary-accent);
-    }
-    
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: var(--primary-accent);
-        transform: scaleX(0);
-        transition: transform 0.3s ease;
-    }
-    
-    .stat-card:hover::before {
-        transform: scaleX(1);
-    }
-    
-    .stat-number {
-        font-size: 2.25rem;
-        font-weight: 700;
-        color: var(--primary-accent);
-        margin: 0 0 0.5rem 0;
-        line-height: 1.2;
-        transition: color 0.3s ease;
-    }
-    
-    .stat-card:hover .stat-number {
-        color: var(--secondary-accent);
-    }
-    
-    .stat-label {
-        font-size: 0.875rem;
-        color: var(--secondary-text);
-        font-weight: 500;
-        margin: 0;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
+def reset_user_session(username):
+    """Reset session when user changes."""
+    if st.session_state.current_user != username:
+        st.session_state.current_user = username
+        st.session_state.df = None
+        st.session_state.chat_history = []
+        st.session_state.analysis_count = 0
+        st.session_state.processed_files = set()
+        st.session_state.stats_rendered = False
+        st.session_state.show_embedded = False
+        st.session_state.show_summary = False
 
-    /* Enhanced upload area with drag-and-drop styling */
-    .upload-area {
-        background: linear-gradient(135deg, #F1F5F9, #F8FAFC);
-        border: 2px dashed #CBD5E1;
-        border-radius: 16px;
-        padding: 2.5rem;
-        text-align: center;
-        margin: 1.5rem 0;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .upload-area:hover {
-        border-color: var(--primary-accent);
-        background: linear-gradient(135deg, #EFF6FF, #F0F9FF);
-        transform: translateY(-2px);
-        box-shadow: var(--hover-shadow);
-    }
-    
-    .upload-area::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(45deg, transparent 30%, rgba(37, 99, 235, 0.05) 50%, transparent 70%);
-        transform: translateX(-100%);
-        transition: transform 0.6s ease;
-    }
-    
-    .upload-area:hover::before {
-        transform: translateX(100%);
-    }
-    
-    .upload-area h4 {
-        color: var(--primary-text);
-        margin: 0 0 0.75rem 0;
-        font-size: 1.25rem;
-        font-weight: 600;
-    }
-    
-    .upload-area p {
-        color: var(--secondary-text);
-        margin: 0.5rem 0;
-        font-size: 1rem;
-    }
 
-    /* Enhanced buttons with hover effects */
-    .stButton > button {
-        background: var(--primary-accent);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        font-size: 0.925rem;
-        box-shadow: var(--card-shadow);
-        transition: all 0.3s ease;
-        border: 1px solid transparent;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .stButton > button::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s ease;
-    }
-    
-    .stButton > button:hover {
-        background: #1D4ED8;
-        transform: translateY(-2px) scale(1.02);
-        box-shadow: var(--hover-shadow);
-    }
-    
-    .stButton > button:hover::before {
-        left: 100%;
-    }
+def handle_authentication():
+    """Handle user authentication."""
+    authenticator = get_authenticator()
+    name, auth_status, username = authenticator.login(location="sidebar")
 
-    /* Smart suggestions styling */
-    .suggestion-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1rem;
-        margin: 1.5rem 0;
-    }
-    
-    .suggestion-button {
-        background: white !important;
-        color: var(--primary-text) !important;
-        border: 1px solid #E2E8F0 !important;
-        text-align: left !important;
-        padding: 1rem 1.25rem !important;
-        height: auto !important;
-        min-height: 60px !important;
-        border-radius: 12px !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .suggestion-button:hover {
-        border-color: var(--primary-accent) !important;
-        background: #EFF6FF !important;
-        transform: translateY(-2px) !important;
-        box-shadow: var(--hover-shadow) !important;
-    }
+    if auth_status is False:
+        st.error("Username or password is incorrect")
+        st.stop()
+    elif auth_status is None:
+        show_login_welcome()
+        st.stop()
 
-    /* Sidebar styling - FIXED */
-    .css-1d391kg {
-        background: var(--sidebar-bg) !important;
-    }
-    
-    .css-1d391kg .stMarkdown {
-        color: var(--sidebar-text) !important;
-    }
-    
-    .css-1d391kg .stMarkdown h1, 
-    .css-1d391kg .stMarkdown h2, 
-    .css-1d391kg .stMarkdown h3, 
-    .css-1d391kg .stMarkdown h4 {
-        color: var(--sidebar-text) !important;
-        font-weight: 700 !important;
-    }
-    
-    .css-1d391kg .stMarkdown .section-header {
-        color: white !important;
-        font-weight: 700 !important;
-        border-bottom-color: rgba(255,255,255,0.3) !important;
-    }
+    return name, username, authenticator
 
-    /* Login form styling - FIXED */
-    .css-1d391kg .stForm {
-        background: rgba(255, 255, 255, 0.95) !important;
-        border: 1px solid #E2E8F0 !important;
-        padding: 1.75rem !important;
-        border-radius: 16px !important;
-        box-shadow: var(--card-shadow) !important;
-    }
-    
-    .css-1d391kg .stTextInput > div > div > input {
-        background: white !important;
-        border: 2px solid #D1D5DB !important;
-        color: var(--primary-text) !important;
-        border-radius: 8px !important;
-        padding: 0.75rem !important;
-        font-size: 1rem !important;
-    }
-    
-    .css-1d391kg .stTextInput > div > div > input:focus {
-        border-color: var(--primary-accent) !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
-        outline: none !important;
-    }
-    
-    .css-1d391kg .stTextInput label {
-        color: var(--primary-text) !important;
-        font-weight: 600 !important;
-        font-size: 0.875rem !important;
-    }
-    
-    .css-1d391kg .stButton > button {
-        background: var(--primary-accent) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 0.75rem 1.5rem !important;
-        font-weight: 600 !important;
-        width: 100% !important;
-    }
 
-    /* Success/Error messages */
-    .stSuccess {
-        background: #F0FDF4 !important;
-        border: 1px solid #BBF7D0 !important;
-        color: var(--success) !important;
-        border-radius: 12px !important;
-    }
-    
-    .stError {
-        background: #FEF2F2 !important;
-        border: 1px solid #FECACA !important;
-        color: var(--error) !important;
-        border-radius: 12px !important;
-    }
-    
-    .stInfo {
-        background: #EFF6FF !important;
-        border: 1px solid #BFDBFE !important;
-        color: var(--primary-accent) !important;
-        border-radius: 12px !important;
-    }
-
-    /* Form styling */
-    .stForm {
-        background: white;
-        border: 1px solid #E2E8F0;
-        padding: 1.75rem;
-        border-radius: 16px;
-        box-shadow: var(--card-shadow);
-    }
-
-    /* Analysis result with animation */
-    .analysis-result {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-left: 4px solid var(--secondary-accent);
-        padding: 1.75rem;
-        margin: 1.5rem 0;
-        border-radius: 16px;
-        box-shadow: var(--card-shadow);
-        animation: slideInUp 0.5s ease-out;
-    }
-    
-    .analysis-result h4 {
-        color: var(--primary-text);
-        margin-top: 0;
-    }
-
-    /* Interactive history */
-    .history-item {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        margin: 1rem 0;
-        transition: all 0.3s ease;
-        overflow: hidden;
-    }
-    
-    .history-item:hover {
-        box-shadow: var(--hover-shadow);
-        border-color: var(--primary-accent);
-    }
-    
-    .history-item .streamlit-expanderHeader {
-        background: #F8FAFC !important;
-        border-bottom: 1px solid #E2E8F0 !important;
-        transition: background 0.3s ease !important;
-    }
-    
-    .history-item:hover .streamlit-expanderHeader {
-        background: #EFF6FF !important;
-    }
-
-    /* Progress bar */
-    .stProgress .st-bo {
-        background: var(--primary-accent) !important;
-    }
-
-    /* Text area styling */
-    .stTextArea textarea {
-        border: 1px solid #D1D5DB !important;
-        border-radius: 12px !important;
-        background: white !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .stTextArea textarea:focus {
-        border-color: var(--primary-accent) !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
-    }
-
-    /* Loading animation */
-    .loading-pulse {
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
-    }
-</style>
-""",
-    unsafe_allow_html=True,
-)
-
-# ---- Authentication ----
-authenticator = get_authenticator()
-name, auth_status, username = authenticator.login(location="sidebar")
-
-if auth_status is False:
-    st.error("Username or password is incorrect")
-    st.stop()
-elif auth_status is None:
-    # Login welcome screen
+def show_login_welcome():
+    """Display welcome screen for non-authenticated users."""
     st.markdown(
         """
     <div class="main-header">
@@ -603,222 +163,244 @@ elif auth_status is None:
         unsafe_allow_html=True,
     )
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    col1, col2, col3 = st.columns(3)
+
+    features = [
+        {
+            "title": "📊 Statistical Analysis",
+            "desc": "Comprehensive statistical summaries, correlation analysis, hypothesis testing, and advanced analytics capabilities.",
+        },
+        {
+            "title": "📈 Data Visualization",
+            "desc": "Generate interactive charts, trend analyses, custom visualizations, and dynamic dashboards from your datasets.",
+        },
+        {
+            "title": "🤖 AI Insights",
+            "desc": "Natural language queries with intelligent pattern recognition, automated insight generation, and predictive analytics.",
+        },
+    ]
+
+    for i, (col, feature) in enumerate(zip([col1, col2, col3], features)):
+        with col:
+            st.markdown(
+                f"""
+            <div class="feature-card">
+                <h4>{feature["title"]}</h4>
+                <p>{feature["desc"]}</p>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+
+
+def display_welcome_message(name):
+    """Display personalized welcome message."""
+    st.markdown(
+        f"""
+    <div class="welcome-card">
+        <h2>Welcome back, {name}! </h2>
+        <p>Your intelligent data analysis workspace is ready. Upload a dataset to unlock powerful insights and discover hidden patterns in your data.</p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+
+def display_stats_cards():
+    """Display dynamic statistics cards."""
+    if st.session_state.df is not None:
+        completeness = (
+            1 - st.session_state.df.isnull().sum().sum() / st.session_state.df.size
+        ) * 100
+        numeric_cols = len(
+            st.session_state.df.select_dtypes(include=["number"]).columns
+        )
+
         st.markdown(
-            """
-        <div class="feature-card">
-            <h3 style="text-align: center;">Secure Access Required</h3>
-            <p style="text-align: center; margin-bottom: 1.5rem;">
-                Please authenticate using the sidebar to access your data analysis workspace.
-            </p>
-            <div style="text-align: center;">
-                <h4>Platform Features:</h4>
-                <p>AI-powered insights • Interactive visualizations • Pattern discovery • Statistical analysis</p>
+            f"""
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-number">{len(st.session_state.df):,}</div>
+                <div class="stat-label">Total Rows</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{len(st.session_state.df.columns)}</div>
+                <div class="stat-label">Columns</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{numeric_cols}</div>
+                <div class="stat-label">Numeric Fields</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{completeness:.1f}%</div>
+                <div class="stat-label">Data Complete</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{st.session_state.analysis_count}</div>
+                <div class="stat-label">Analyses Run</div>
             </div>
         </div>
         """,
             unsafe_allow_html=True,
         )
-    st.stop()
 
-# ---- Main Application ----
 
-# Personalized welcome message (centered)
-st.markdown(
-    f"""
-<div class="welcome-card">
-    <h2>Welcome back, {name}! 🎯</h2>
-    <p>Your intelligent data analysis workspace is ready. Upload a dataset to unlock powerful insights and discover hidden patterns in your data.</p>
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
-# Logout in sidebar
-authenticator.logout("Logout", location="sidebar")
-
-# Initialize session state
-if "df" not in st.session_state:
-    st.session_state.df = None
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "analysis_count" not in st.session_state:
-    st.session_state.analysis_count = 0
-if "processed_files" not in st.session_state:
-    st.session_state.processed_files = set()
-if "current_user" not in st.session_state:
-    st.session_state.current_user = None
-if "stats_rendered" not in st.session_state:
-    st.session_state.stats_rendered = False
-
-# Check if user changed (logout/login cycle) and reset session
-if st.session_state.current_user != username:
-    st.session_state.current_user = username
-    st.session_state.df = None
-    st.session_state.chat_history = []
-    st.session_state.analysis_count = 0
-    st.session_state.processed_files = set()
-    st.session_state.stats_rendered = False
-
-# Dynamic stats display
-if st.session_state.df is not None:
-    completeness = (
-        1 - st.session_state.df.isnull().sum().sum() / st.session_state.df.size
-    ) * 100
-    numeric_cols = len(st.session_state.df.select_dtypes(include=["number"]).columns)
-
-    st.markdown(
-        f"""
-    <div class="stats-container">
-        <div class="stat-card">
-            <div class="stat-number">{len(st.session_state.df):,}</div>
-            <div class="stat-label">Total Rows</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{len(st.session_state.df.columns)}</div>
-            <div class="stat-label">Columns</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{numeric_cols}</div>
-            <div class="stat-label">Numeric Fields</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{completeness:.1f}%</div>
-            <div class="stat-label">Data Complete</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{st.session_state.analysis_count}</div>
-            <div class="stat-label">Analyses Run</div>
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
-# Enhanced sidebar
-with st.sidebar:
-    st.markdown(
-        '<div class="section-header" style="color: white !important; font-weight: 700 !important; border-bottom-color: rgba(255,255,255,0.4) !important; font-size: 1.25rem !important;">📁 Data Upload</div>',
-        unsafe_allow_html=True,
-    )
-
-    uploaded_file = st.file_uploader(
-        "Choose file",
-        type=["csv", "xlsx"],
-        help="Supported formats: CSV, Excel (max 200MB)",
-    )
-
-    if uploaded_file is None:
+def setup_sidebar():
+    """Setup sidebar with file upload and tools."""
+    with st.sidebar:
         st.markdown(
-            """
-        <div class="upload-area">
-            <h4>📊 Ready for your data</h4>
-            <p>Drop your CSV or Excel file here</p>
-            <p>Maximum file size: 200MB</p>
-        </div>
-        """,
+            '<div class="section-header" style="color: white !important; font-weight: 700 !important; border-bottom-color: rgba(255,255,255,0.4) !important; font-size: 1.25rem !important;">📁 Data Upload</div>',
             unsafe_allow_html=True,
         )
 
-    # Analysis capabilities
-    with st.expander("🔍 Analysis Capabilities"):
-        st.markdown("""
-        **Statistical Analysis**
-        - Descriptive statistics and summaries
-        - Correlation and regression analysis
-        - Distribution analysis and testing
-        
-        **Data Visualization**
-        - Interactive charts and graphs
-        - Trend analysis and forecasting
-        - Pattern identification
-        
-        **Data Quality Assessment**
-        - Missing value analysis
-        - Outlier detection and treatment
-        - Data profiling and validation
-        """)
+        uploaded_file = st.file_uploader(
+            "Choose file",
+            type=["csv", "xlsx"],
+            help="Supported formats: CSV, Excel (max 200MB)",
+        )
 
-# Enhanced file upload handling
-if uploaded_file:
-    # Create a unique identifier for the file
-    file_id = f"{uploaded_file.name}_{uploaded_file.size}"
 
-    if file_id not in st.session_state.get("processed_files", set()):
-        try:
-            with st.spinner("🔄 Processing your dataset..."):
-                if "processed_files" not in st.session_state:
-                    st.session_state.processed_files = set()
-                st.session_state.processed_files.add(file_id)
+        # Analysis capabilities
+        with st.expander("🔍 Analysis Capabilities"):
+            st.markdown("""
+            **Statistical Analysis**
+            - Descriptive statistics and summaries
+            - Correlation and regression analysis
+            - Distribution analysis and testing
+            
+            **Data Visualization**
+            - Interactive charts and graphs
+            - Trend analysis and forecasting
+            - Pattern identification
+            
+            **Data Quality Assessment**
+            - Missing value analysis
+            - Outlier detection and treatment
+            - Data profiling and validation
+            
+            **Automated EDA**
+            - One-click comprehensive analysis
+            - Professional HTML reports
+            - Correlation heatmaps & distributions
+            """)
 
-                if uploaded_file.name.endswith(".csv"):
-                    df = pd.read_csv(uploaded_file)
-                else:
-                    df = pd.read_excel(uploaded_file)
+    return uploaded_file
 
-                st.session_state.df = df
-                st.session_state.stats_rendered = (
-                    False  # Reset flag when new data is loaded
-                )
-                st.success(f"✅ Successfully loaded {uploaded_file.name}")
 
-        except Exception as e:
-            st.error(f"❌ Error loading file: {str(e)}")
-            # Remove from processed files if there was an error
-            if (
-                "processed_files" in st.session_state
-                and file_id in st.session_state.processed_files
-            ):
-                st.session_state.processed_files.remove(file_id)
+def display_analysis_tools():
+    """Display analysis tools in sidebar when data is available."""
+    if st.session_state.df is not None:
+        with st.sidebar:
+            st.markdown("---")
+            st.markdown("**⚡ Quick Analysis Tools**")
 
-# Stats cards - Show only once when data is available
-if st.session_state.df is not None and not st.session_state.stats_rendered:
-    completeness = (
-        1 - st.session_state.df.isnull().sum().sum() / st.session_state.df.size
-    ) * 100
-    numeric_cols_count = len(
-        st.session_state.df.select_dtypes(include=["number"]).columns
-    )
+            # Custom CSS for EDA buttons
+            st.markdown(
+                """
+            <style>
+            .eda-button-container .stButton > button {
+                background: linear-gradient(135deg, #2563EB, #0D9488) !important;
+                color: white !important;
+                border: none !important;
+                border-radius: 15px !important;
+                padding: 1.2rem 1.5rem !important;
+                font-weight: 600 !important;
+                font-size: 0.95rem !important;
+                width: 100% !important;
+                height: 80px !important;
+                box-shadow: 0 6px 20px rgba(37, 99, 235, 0.25) !important;
+                transition: all 0.3s ease !important;
+                position: relative !important;
+                overflow: hidden !important;
+                white-space: nowrap !important;
+                text-overflow: ellipsis !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            .eda-button-container .stButton > button:hover {
+                transform: translateY(-2px) scale(1.02) !important;
+                box-shadow: 0 8px 25px rgba(37, 99, 235, 0.35) !important;
+                background: linear-gradient(135deg, #1D4ED8, #0F766E) !important;
+            }
+            .eda-button-container .stButton > button::before {
+                content: '' !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: -100% !important;
+                width: 100% !important;
+                height: 100% !important;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent) !important;
+                transition: left 0.5s ease !important;
+            }
+            .eda-button-container .stButton > button:hover::before {
+                left: 100% !important;
+            }
+            </style>
+            """,
+                unsafe_allow_html=True,
+            )
 
-    st.markdown(
-        f"""
-    <div class="stats-container">
-        <div class="stat-card">
-            <div class="stat-number">{len(st.session_state.df):,}</div>
-            <div class="stat-label">Total Rows</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{len(st.session_state.df.columns)}</div>
-            <div class="stat-label">Columns</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{numeric_cols_count}</div>
-            <div class="stat-label">Numeric Fields</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{completeness:.1f}%</div>
-            <div class="stat-label">Data Complete</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{st.session_state.analysis_count}</div>
-            <div class="stat-label">Analyses Run</div>
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
+            st.markdown('<div class="eda-button-container">', unsafe_allow_html=True)
 
-    st.session_state.stats_rendered = True  # Mark as rendered
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(
+                    "Generate EDA Report",
+                    use_container_width=True,
+                    help="Create comprehensive automated analysis",
+                    key="eda_report_btn",
+                ):
+                    st.session_state.generate_eda = True
 
-# Main content
-if st.session_state.df is not None:
-    # Dataset overview
+            with col2:
+                if st.button(
+                    "Quick Visualizations",
+                    use_container_width=True,
+                    help="Generate beautiful instant charts",
+                    key="quick_viz_btn",
+                ):
+                    st.session_state.quick_viz = True
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+
+def handle_file_upload(uploaded_file):
+    """Handle file upload and processing."""
+    if uploaded_file:
+        file_id = f"{uploaded_file.name}_{uploaded_file.size}"
+
+        if file_id not in st.session_state.get("processed_files", set()):
+            try:
+                with st.spinner("Processing your dataset..."):
+                    if "processed_files" not in st.session_state:
+                        st.session_state.processed_files = set()
+                    st.session_state.processed_files.add(file_id)
+
+                    if uploaded_file.name.endswith(".csv"):
+                        df = pd.read_csv(uploaded_file)
+                    else:
+                        df = pd.read_excel(uploaded_file)
+
+                    st.session_state.df = df
+                    st.session_state.stats_rendered = False
+                    st.success(f"✅ Successfully loaded {uploaded_file.name}")
+
+            except Exception as e:
+                st.error(f"❌ Error loading file: {str(e)}")
+                if (
+                    "processed_files" in st.session_state
+                    and file_id in st.session_state.processed_files
+                ):
+                    st.session_state.processed_files.remove(file_id)
+
+
+def display_dataset_overview():
+    """Display dataset overview and details."""
     st.markdown(
         '<div class="section-header">📊 Dataset Overview</div>', unsafe_allow_html=True
     )
 
-    # Data preview
     with st.expander("📋 Data Preview", expanded=True):
         col1, col2 = st.columns([3, 1])
 
@@ -839,7 +421,7 @@ if st.session_state.df is not None:
             st.markdown(
                 f"""
             <div class="feature-card">
-                <h4>📈 Dataset Summary</h4>
+                <h4>Dataset Summary</h4>
                 <p><strong>Dimensions:</strong> {st.session_state.df.shape[0]:,} × {st.session_state.df.shape[1]}</p>
                 <p><strong>Memory usage:</strong> {memory_usage:.1f} MB</p>
                 <p><strong>Numeric columns:</strong> {numeric_cols}</p>
@@ -865,61 +447,22 @@ if st.session_state.df is not None:
         )
         st.dataframe(col_info, use_container_width=True)
 
-    # Analysis interface
+
+def handle_ai_analysis():
+    """Handle AI-powered data analysis."""
     st.markdown(
         '<div class="section-header">🧠 Analysis Center</div>', unsafe_allow_html=True
     )
 
-    # Smart suggestions based on data types
+    # Smart suggestions
     st.markdown("**🎯 Smart Suggestions Based on Your Data:**")
+    suggestions = generate_suggestions(st.session_state.df)
 
-    numeric_cols = st.session_state.df.select_dtypes(include=["number"]).columns
-    categorical_cols = st.session_state.df.select_dtypes(include=["object"]).columns
-
-    suggestions = []
-
-    # Generate data-specific suggestions
-    if len(numeric_cols) > 1:
-        suggestions.append(
-            f"📊 Analyze correlations between {numeric_cols[0]} and {numeric_cols[1]}"
-        )
-        suggestions.append(
-            f"📈 Compare statistical distributions of {numeric_cols[0]} vs {numeric_cols[1] if len(numeric_cols) > 1 else 'other variables'}"
-        )
-
-    if len(categorical_cols) > 0 and len(numeric_cols) > 0:
-        suggestions.append(
-            f"🔍 Examine {numeric_cols[0] if len(numeric_cols) > 0 else 'values'} patterns across {categorical_cols[0]} categories"
-        )
-
-    if len(categorical_cols) > 1:
-        suggestions.append(
-            f"📋 Cross-tabulate {categorical_cols[0]} and {categorical_cols[1]} relationships"
-        )
-
-    # Add general suggestions
-    suggestions.extend(
-        [
-            "🎯 Generate comprehensive statistical summary report",
-            "🔎 Identify outliers and anomalies in the dataset",
-            "📊 Create data quality assessment with recommendations",
-            "📈 Analyze missing data patterns and suggest handling strategies",
-        ]
-    )
-
-    # Display suggestions in a grid
     cols = st.columns(2)
-    for i, suggestion in enumerate(suggestions[:6]):  # Show top 6 suggestions
+    for i, suggestion in enumerate(suggestions[:6]):
         with cols[i % 2]:
             if st.button(suggestion, key=f"suggest_{i}", use_container_width=True):
-                st.session_state.suggested_question = (
-                    suggestion.replace("📊 ", "")
-                    .replace("📈 ", "")
-                    .replace("🔍 ", "")
-                    .replace("🎯 ", "")
-                    .replace("🔎 ", "")
-                    .replace("📋 ", "")
-                )
+                st.session_state.suggested_question = suggestion
 
     # Analysis input
     user_question = st.text_area(
@@ -945,69 +488,72 @@ if st.session_state.df is not None:
             st.stop()
 
         with st.spinner("🤖 AI is analyzing your data..."):
-            try:
-                # Progress tracking
-                progress = st.progress(0)
-                status = st.empty()
+            # Progress tracking
+            progress = st.progress(0)
+            status = st.empty()
 
-                status.info("🔄 Initializing AI analysis engine...")
-                progress.progress(25)
+            status.info("Initializing AI analysis engine...")
+            progress.progress(25)
 
-                llm = ChatGroq(
-                    api_key=GROQ_API_KEY,
-                    model="llama-3.3-70b-versatile",
-                    temperature=0,
-                )
-
-                status.info("🧠 Creating data analysis agent...")
-                progress.progress(50)
-
-                agent = create_pandas_dataframe_agent(
-                    llm,
-                    st.session_state.df,
-                    verbose=False,
-                    allow_dangerous_code=True,
-                )
-
-                status.info("⚡ Processing analysis request...")
-                progress.progress(75)
-
-                response = agent.run(user_question)
-                progress.progress(100)
-
-                status.empty()
+            # Create analysis agent
+            agent = create_analysis_agent(st.session_state.df)
+            if agent is None:
                 progress.empty()
+                status.empty()
+                return
 
-                # Update session state
-                st.session_state.chat_history.append(("User", user_question))
-                st.session_state.chat_history.append(("Assistant", response))
-                st.session_state.analysis_count += 1
+            status.info("🧠 Creating data analysis agent...")
+            progress.progress(50)
 
-                # Display results
-                st.markdown(
-                    '<div class="section-header">🎯 Analysis Results</div>',
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    f"""
-                <div class="analysis-result">
-                    <h4>💡 Analysis Output</h4>
-                    {response}
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
+            status.info("⚡ Processing analysis request...")
+            progress.progress(75)
 
-            except Exception as e:
-                st.error(f"❌ Analysis failed: {str(e)}")
-                st.info(
-                    "💡 Please verify your API key and try a simpler query if the error persists."
-                )
+            # Run analysis
+            response = run_analysis(agent, user_question)
+            progress.progress(100)
 
-else:
-    # No data loaded - enhanced welcome
+            status.empty()
+            progress.empty()
+
+            # Update session state
+            st.session_state.chat_history.append(("User", user_question))
+            st.session_state.chat_history.append(("Assistant", response))
+            st.session_state.analysis_count += 1
+
+            # Display results
+            st.markdown(
+                '<div class="section-header">🎯 Analysis Results</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"""
+            <div class="analysis-result">
+                <h4>💡 Analysis Output</h4>
+                {response}
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+
+
+def handle_eda_generation():
+    """Handle EDA report generation."""
+    if st.session_state.get("generate_eda", False):
+        st.session_state.generate_eda = False  # Reset flag
+        generate_eda_report(st.session_state.df)
+
+
+def handle_quick_visualizations():
+    """Handle quick visualization generation."""
+    if st.session_state.get("quick_viz", False):
+        st.session_state.quick_viz = False  # Reset flag
+        create_stats_visualization(st.session_state.df)
+
+
+def display_getting_started():
+    """Display getting started section for users without data."""
     st.markdown(
-        '<div class="section-header">🚀 Getting Started</div>', unsafe_allow_html=True
+        '<div class="section-header"> Getting Started</div>', unsafe_allow_html=True
     )
 
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -1032,85 +578,143 @@ else:
 
     col1, col2, col3 = st.columns(3)
 
-    with col1:
+    capabilities = [
+        {
+            "title": "📊 Statistical Analysis",
+            "desc": "Comprehensive statistical summaries, correlation analysis, hypothesis testing, and advanced analytics capabilities.",
+        },
+        {
+            "title": "📈 Data Visualization",
+            "desc": "Generate interactive charts, trend analyses, custom visualizations, and dynamic dashboards from your datasets.",
+        },
+        {
+            "title": "🤖 AI Insights",
+            "desc": "Natural language queries with intelligent pattern recognition, automated insight generation, and predictive analytics.",
+        },
+    ]
+
+    for col, capability in zip([col1, col2, col3], capabilities):
+        with col:
+            st.markdown(
+                f"""
+            <div class="feature-card">
+                <h4>{capability["title"]}</h4>
+                <p>{capability["desc"]}</p>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+
+
+def display_analysis_history():
+    """Display interactive analysis history."""
+    if st.session_state.chat_history:
         st.markdown(
-            """
-        <div class="feature-card">
-            <h4>📊 Statistical Analysis</h4>
-            <p>Comprehensive statistical summaries, correlation analysis, hypothesis testing, and advanced analytics capabilities.</p>
-        </div>
-        """,
+            '<div class="section-header">📚 Analysis History</div>',
             unsafe_allow_html=True,
         )
 
-    with col2:
-        st.markdown(
-            """
-        <div class="feature-card">
-            <h4>📈 Data Visualization</h4>
-            <p>Generate interactive charts, trend analyses, custom visualizations, and dynamic dashboards from your datasets.</p>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
+        recent_history = st.session_state.chat_history[-6:]  # Last 3 Q&A pairs
 
-    with col3:
-        st.markdown(
-            """
-        <div class="feature-card">
-            <h4>🤖 AI Insights</h4>
-            <p>Natural language queries with intelligent pattern recognition, automated insight generation, and predictive analytics.</p>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
+        for i in range(0, len(recent_history), 2):
+            if i + 1 < len(recent_history):
+                question = recent_history[i][1]
+                answer = recent_history[i + 1][1]
 
-# Interactive analysis history
-if st.session_state.chat_history:
+                with st.container():
+                    st.markdown('<div class="history-item">', unsafe_allow_html=True)
+                    with st.expander(
+                        f"💭 {question[:70]}..."
+                        if len(question) > 70
+                        else f"💭 {question}"
+                    ):
+                        st.markdown(
+                            f"""
+                        <div class="analysis-result">
+                            <strong>🔍 Query:</strong> {question}<br><br>
+                            <strong>🤖 Analysis:</strong><br>{answer}
+                        </div>
+                        """,
+                            unsafe_allow_html=True,
+                        )
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Clear History", use_container_width=True):
+                st.session_state.chat_history = []
+                st.rerun()
+        with col2:
+            if st.button("Export Session", use_container_width=True):
+                st.info("Session export functionality available upon request.")
+
+
+def display_footer():
+    """Display application footer."""
+    st.markdown("---")
     st.markdown(
-        '<div class="section-header">📚 Analysis History</div>', unsafe_allow_html=True
+        """
+    <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">
+        <p style="margin: 0; font-weight: 600; font-size: 1.1rem;">🤖 AI Data Assistant</p>
+        <p style="margin: 0; font-size: 0.875rem;">Powered by Groq AI • Built by Richard with Streamlit • Professional Data Analytics Platform</p>
+    </div>
+    """,
+        unsafe_allow_html=True,
     )
 
-    recent_history = st.session_state.chat_history[-6:]  # Last 3 Q&A pairs
 
-    for i in range(0, len(recent_history), 2):
-        if i + 1 < len(recent_history):
-            question = recent_history[i][1]
-            answer = recent_history[i + 1][1]
+def main():
+    """Main application function."""
+    # Initialize session state
+    initialize_session_state()
 
-            with st.container():
-                st.markdown('<div class="history-item">', unsafe_allow_html=True)
-                with st.expander(
-                    f"💭 {question[:70]}..." if len(question) > 70 else f"💭 {question}"
-                ):
-                    st.markdown(
-                        f"""
-                    <div class="analysis-result">
-                        <strong>🔍 Query:</strong> {question}<br><br>
-                        <strong>🤖 Analysis:</strong><br>{answer}
-                    </div>
-                    """,
-                        unsafe_allow_html=True,
-                    )
-                st.markdown("</div>", unsafe_allow_html=True)
+    # Handle authentication
+    name, username, authenticator = handle_authentication()
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if st.button("🗑️ Clear History", use_container_width=True):
-            st.session_state.chat_history = []
-            st.rerun()
-    with col2:
-        if st.button("📤 Export Session", use_container_width=True):
-            st.info("📋 Session export functionality available upon request.")
+    # Reset session if user changed
+    reset_user_session(username)
 
-# Footer
-st.markdown("---")
-st.markdown(
-    """
-<div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">
-    <p style="margin: 0; font-weight: 600; font-size: 1.1rem;">🤖 AI Data Assistant</p>
-    <p style="margin: 0; font-size: 0.875rem;">Powered by Groq AI • Built with Streamlit • Professional Data Analytics Platform</p>
-</div>
-""",
-    unsafe_allow_html=True,
-)
+    # Display welcome message
+    display_welcome_message(name)
+
+    # Add logout in sidebar
+    authenticator.logout("Logout", location="sidebar")
+
+    # Setup sidebar and get uploaded file
+    uploaded_file = setup_sidebar()
+
+    # Handle file upload
+    handle_file_upload(uploaded_file)
+
+    # Display analysis tools in sidebar (after file is processed)
+    display_analysis_tools()
+
+    # Display stats cards
+    display_stats_cards()
+
+    # Main content based on whether data is loaded
+    if st.session_state.df is not None:
+        # Display dataset overview
+        display_dataset_overview()
+
+        # Handle AI analysis
+        handle_ai_analysis()
+
+        # Handle EDA report generation
+        handle_eda_generation()
+
+        # Handle quick visualizations
+        handle_quick_visualizations()
+    else:
+        # Display getting started section
+        display_getting_started()
+
+    # Display analysis history
+    display_analysis_history()
+
+    # Display footer
+    display_footer()
+
+
+if __name__ == "__main__":
+    main()
