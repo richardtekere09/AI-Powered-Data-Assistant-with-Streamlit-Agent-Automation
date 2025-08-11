@@ -51,7 +51,9 @@ reports/
 # Docker
 *.container
 *.pid
-docker-compose.override.yml
+*.docker-compose.override.yml
+*.docker-compose.yml
+
 
 # CI/CD artifacts
 .github/workflows/__pycache__/
