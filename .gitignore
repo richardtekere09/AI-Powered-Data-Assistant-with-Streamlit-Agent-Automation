@@ -76,3 +76,4 @@ htmlcov/
 .cache/
 config
 fix_admins.py
+docker-compose-one.yml
