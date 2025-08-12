@@ -93,9 +93,7 @@ footer,
     visibility: hidden;
 }
 
-header {
-    visibility: hidden;
-}
+/* header { visibility: hidden; } */
 
 /* Premium Header Design */
 .main-header {
@@ -690,6 +688,69 @@ header {
     }
 }
 
+/* Custom sidebar toggle fix */
+.sidebar-toggle {
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 10000 !important;
+    background: #2563EB !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 0.5rem !important;
+    cursor: pointer !important;
+    font-size: 1.2rem !important;
+    width: 40px !important;
+    height: 40px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.sidebar-toggle:hover {
+    background: #1D4ED8 !important;
+    transform: scale(1.1) !important;
+}
+
+/* Ensure main content has proper spacing */
+.main .block-container {
+    padding-top: 4rem !important;
+}
+
+/* Override Streamlit's default sidebar toggle styles */
+button[kind="header"] {
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 10000 !important;
+    background: #2563EB !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    width: 40px !important;
+    height: 40px !important;
+}
+
+/* Target Streamlit's sidebar toggle specifically */
+[data-testid="collapsedControl"] {
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 10000 !important;
+    background: #2563EB !important;
+    color: white !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-testid="collapsedControl"]:hover {
+    background: #1D4ED8 !important;
+    transform: scale(1.1) !important;
+}
+
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
     :root {
@@ -700,4 +761,46 @@ header {
         --text-secondary: #CBD5E1;
         --text-tertiary: #64748B;
     }
+}
+/* SIDEBAR FIX - Add this to the end of your static/style.css */
+
+/* Ensure sidebar toggle is always visible and clickable */
+.css-1cypcdb,
+button[data-testid="collapsedControl"],
+button[kind="header"] {
+    pointer-events: auto !important;
+    z-index: 999999 !important;
+    position: relative !important;
+    display: flex !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 6px !important;
+    padding: 4px !important;
+    margin: 4px !important;
+    cursor: pointer !important;
+}
+
+/* Make sure sidebar elements don't get hidden */
+[data-testid="stSidebar"] {
+    pointer-events: auto !important;
+}
+
+[data-testid="stSidebar"] * {
+    pointer-events: auto !important;
+}
+
+/* Sidebar collapse/expand animation */
+.css-1d391kg {
+    transition: transform 0.3s ease !important;
+}
+
+/* Force hamburger icon visibility */
+.css-1cypcdb svg {
+    color: #262730 !important;
+    width: 20px !important;
+    height: 20px !important;
+}
+
+/* Override any CSS that might block sidebar */
+.stApp * {
+    pointer-events: auto;
 }

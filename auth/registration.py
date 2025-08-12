@@ -4,12 +4,73 @@ User registration page for AI Data Assistant
 
 import streamlit as st
 import re
+import sys
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Add parent directory to path for imports
+sys.path.append(str(Path(__file__).parent.parent))
+
+from config.database import get_db_session
 from services.user_service import UserService
 from services.email_service import EmailService
-from config.database import get_db_session
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Page config
+st.set_page_config(
+    page_title="Create Account - AI Data Assistant", page_icon="🚀", layout="wide"
+)
+
+
+def load_css():
+    """Load CSS styles."""
+    css_path = Path(__file__).parent.parent / "static" / "style.css"
+
+    if css_path.exists():
+        with open(css_path) as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    else:
+        # Fallback CSS
+        st.markdown(
+            """
+        <style>
+        .main-header {
+            background: linear-gradient(135deg, #2563EB 0%, #0D9488 100%);
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 16px;
+            margin: 2rem 0;
+            text-align: center;
+        }
+        .feature-card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .welcome-card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            padding: 2rem;
+            border-radius: 16px;
+            margin: 2rem auto;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #16A34A;
+        }
+        </style>
+        """,
+            unsafe_allow_html=True,
+        )
 
 
 def validate_email(email: str) -> bool:
@@ -55,61 +116,123 @@ def validate_username(username: str) -> tuple[bool, str]:
     return True, "Username is valid"
 
 
-def show_registration_form():
-    """Display the user registration form."""
+def show_registration_success(username: str, email: str):
+    """Show registration success message."""
     st.markdown(
-        """
-        <div class="centered-container-large">
-            <h1>Create Your Account</h1>
-            <p class="form-description">
-                Join AI Data Assistant and unlock the power of intelligent data analysis
-            </p>
+        f"""
+        <div class="welcome-card">
+            <h2>🎉 Account Created Successfully!</h2>
+            <p>Welcome to AI Data Assistant, <strong>{username}</strong>!</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Create form
-    with st.form("registration_form", clear_on_submit=True):
+    st.success(
+        f"✅ Account created! Please check your email ({email}) for a verification link."
+    )
+    #st.balloons()
+
+    # Next steps
+    with st.expander("📧 What's Next?", expanded=True):
+        st.markdown(f"""
+        **1. Check Your Email ({email})**
+        - Look for an email from richardtekere02@gmail.com
+        - Check your spam folder if you don't see it
+        
+        **2. Click the Verification Link**
+        - Click the verification link in the email
+        - This will activate your account
+        
+        **3. Start Analyzing Data**
+        - Once verified, you can log in and start uploading datasets
+        - Get AI-powered insights and create visualizations
+        """)
+
+    # Login button with proper navigation
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown(
+            """
+        <div style="text-align: center; margin: 2rem 0;">
+            <a href="/" style="display: inline-block; background: #2563EB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                🔐 Go to Login Page
+            </a>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+
+def show_registration_form():
+    """Display the user registration form."""
+    st.markdown(
+        """
+        <div class="main-header">
+            <h1>🚀 Create Your Account</h1>
+            <p>Join AI Data Assistant and unlock the power of intelligent data analysis</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Back to login link at top
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown(
+            """
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <a href="/" style="color: #2563EB; text-decoration: none; font-weight: 600;">
+                ← Back to Login
+            </a>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+    # Registration form
+    with st.form("registration_form", clear_on_submit=False):
         col1, col2 = st.columns(2)
 
         with col1:
             username = st.text_input(
-                "Username",
-                placeholder="Enter your username",
+                "Username *",
+                placeholder="Choose a username",
                 help="3-20 characters, letters, numbers, underscores, hyphens only",
             )
 
             email = st.text_input(
-                "Email Address",
-                placeholder="Enter your email address",
+                "Email Address *",
+                placeholder="your.email@example.com",
                 help="We'll send a verification email to this address",
             )
 
         with col2:
             password = st.text_input(
-                "Password",
+                "Password *",
                 type="password",
                 placeholder="Create a strong password",
                 help="At least 8 characters with uppercase, lowercase, number, and special character",
             )
 
             confirm_password = st.text_input(
-                "Confirm Password", type="password", placeholder="Confirm your password"
+                "Confirm Password *",
+                type="password",
+                placeholder="Confirm your password",
             )
 
         # Terms and conditions
         terms_accepted = st.checkbox(
-            "I agree to the Terms of Service and Privacy Policy",
+            "I agree to the Terms of Service and Privacy Policy *",
             help="You must accept the terms to create an account",
         )
 
         # Submit button
-        submit_button = st.form_submit_button(
-            "Create Account", type="primary", use_container_width=True
+        submitted = st.form_submit_button(
+            "🚀 Create Account", type="primary", use_container_width=True
         )
 
-        if submit_button:
+        if submitted:
             # Validate form data
             validation_errors = []
 
@@ -156,6 +279,10 @@ def show_registration_form():
                         )
 
                         if success and user:
+                            st.info(
+                                "🔄 Creating account and sending verification email..."
+                            )
+
                             # Send verification email
                             email_sent = email_service.send_verification_email(
                                 to_email=email,
@@ -164,69 +291,46 @@ def show_registration_form():
                             )
 
                             if email_sent:
-                                st.success(
-                                    f"Account created successfully! Please check your email ({email}) "
-                                    "for a verification link to complete your registration."
-                                )
-
-                                # Show next steps
-                                with st.expander("📧 What's Next?", expanded=True):
-                                    st.markdown("""
-                                    **1. Check Your Email**
-                                    - Look for an email from AI Data Assistant
-                                    - Check your spam folder if you don't see it
-                                    
-                                    **2. Verify Your Email**
-                                    - Click the verification link in the email
-                                    - Or copy and paste the link into your browser
-                                    
-                                    **3. Start Using the App**
-                                    - Once verified, you can log in and start analyzing data
-                                    - Upload your datasets and get AI-powered insights
-                                    """)
-
-                                # Add a note about email configuration
-                                if not email_service.smtp_username:
-                                    st.warning(
-                                        "**Note:** Email service is not configured. "
-                                        "Please contact an administrator to verify your account manually."
-                                    )
-
+                                show_registration_success(username, email)
+                                st.stop()  # Stop execution to show success message
                             else:
                                 st.warning(
-                                    f"Account created but verification email could not be sent. "
-                                    f"Please contact support to verify your account."
+                                    f"✅ Account created successfully! "
+                                    f"However, verification email could not be sent to {email}. "
                                 )
+
+                                # Show manual verification option for development
+                                col1, col2 = st.columns([1, 1])
+                                with col1:
+                                    if st.button(
+                                        "✅ Verify Account Manually", type="primary"
+                                    ):
+                                        user.mark_verified()
+                                        db.commit()
+                                        st.success(
+                                            "✅ Account verified! You can now log in."
+                                        )
+                                        st.balloons()
+
+                                with col2:
+                                    if st.button("📧 Resend Email"):
+                                        st.rerun()
                         else:
-                            st.error(f"{message}")
+                            st.error(f"❌ {message}")
 
                 except Exception as e:
                     logger.error(f"Error during user registration: {e}")
-                    st.error(
-                        " An error occurred during registration. Please try again later."
-                    )
+                    st.error(f"❌ An error occurred during registration: {str(e)}")
+
+                    # Show debug info in development
+                    if os.getenv("DEBUG", "false").lower() == "true":
+                        st.exception(e)
+
             else:
                 # Display validation errors
-                st.error("Please fix the following errors:")
+                st.error("❌ Please fix the following errors:")
                 for error in validation_errors:
                     st.error(f"• {error}")
-
-
-def show_login_link():
-    """Show link to login page."""
-    st.markdown("---")
-    st.markdown(
-        """
-        <div class="text-center">
-            <p>Already have an account? 
-                <a href="?page=login" target="_self" class="link-primary">
-                    Sign in here
-                </a>
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 
 def show_features():
@@ -234,7 +338,7 @@ def show_features():
     st.markdown("---")
     st.markdown(
         """
-        <div class="centered-container">
+        <div style="text-align: center;">
             <h2>✨ Why Choose AI Data Assistant?</h2>
         </div>
         """,
@@ -265,10 +369,10 @@ def show_features():
         with col:
             st.markdown(
                 f"""
-                <div class="feature-display">
-                    <div class="feature-icon">{feature["icon"]}</div>
-                    <h3 class="feature-title">{feature["title"]}</h3>
-                    <p class="feature-description">{feature["description"]}</p>
+                <div class="feature-card">
+                    <div style="font-size: 2rem; text-align: center; margin-bottom: 1rem;">{feature["icon"]}</div>
+                    <h3 style="text-align: center; margin: 0 0 1rem 0;">{feature["title"]}</h3>
+                    <p style="text-align: center; margin: 0;">{feature["description"]}</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -277,20 +381,14 @@ def show_features():
 
 def main():
     """Main registration page function."""
-    st.set_page_config(
-        page_title="Create Account - AI Data Assistant", page_icon="🚀", layout="wide"
-    )
-
-    # CSS styles are loaded from external file
+    # Load CSS
+    load_css()
 
     # Show registration form
     show_registration_form()
 
     # Show features
     show_features()
-
-    # Show login link
-    show_login_link()
 
 
 if __name__ == "__main__":

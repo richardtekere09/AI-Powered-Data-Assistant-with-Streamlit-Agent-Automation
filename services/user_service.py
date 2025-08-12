@@ -1,66 +1,65 @@
+# services/user_service.py
 """
-User service for handling user operations
+User service for authentication and user management
 """
 
-import hashlib
-import secrets
+import bcrypt
+import uuid
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from passlib.context import CryptContext
 from models.user import User, EmailVerificationToken, PasswordResetToken, UserSession
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 class UserService:
-    """Service class for user management operations."""
+    """Service class for user-related operations."""
 
     def __init__(self, db: Session):
         self.db = db
 
-    def hash_password(self, password: str) -> str:
-        """Hash a password using bcrypt."""
-        return pwd_context.hash(password)
-
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        """Verify a password against its hash."""
-        return pwd_context.verify(plain_password, hashed_password)
-
     def create_user(
         self, username: str, email: str, password: str
     ) -> Tuple[bool, str, Optional[User]]:
-        """Create a new user account."""
+        """
+        Create a new user account.
+
+        Args:
+            username: Unique username
+            email: User email address
+            password: Plain text password
+
+        Returns:
+            Tuple of (success, message, user_object)
+        """
         try:
-            # Check if username or email already exists
+            # Check if username already exists
             existing_user = (
-                self.db.query(User)
-                .filter((User.username == username) | (User.email == email))
-                .first()
+                self.db.query(User).filter(User.username == username).first()
             )
-
             if existing_user:
-                if existing_user.username == username:
-                    return False, "Username already exists", None
-                else:
-                    return False, "Email already registered", None
+                return False, "Username already exists", None
 
-            # Create new user
-            user = User(
-                username=username,
-                email=email,
-                password_hash=self.hash_password(password),
-                is_verified=False,
-            )
+            # Check if email already exists
+            existing_email = self.db.query(User).filter(User.email == email).first()
+            if existing_email:
+                return False, "Email already registered", None
+
+            # Hash password
+            password_hash = bcrypt.hashpw(
+                password.encode("utf-8"), bcrypt.gensalt()
+            ).decode("utf-8")
+
+            # Create user
+            user = User(username=username, email=email, password_hash=password_hash)
 
             # Generate verification token
-            verification_token = user.generate_verification_token()
+            user.generate_verification_token()
 
+            # Add to database
             self.db.add(user)
             self.db.commit()
             self.db.refresh(user)
@@ -70,122 +69,142 @@ class UserService:
 
         except IntegrityError as e:
             self.db.rollback()
-            logger.error(f"Integrity error creating user: {e}")
-            return False, "User creation failed due to database constraint", None
+            logger.error(f"Database integrity error during user creation: {e}")
+            return False, "User with this information already exists", None
         except Exception as e:
             self.db.rollback()
             logger.error(f"Error creating user: {e}")
-            return False, "User creation failed", None
+            return False, "An error occurred during user creation", None
 
     def authenticate_user(
         self, username: str, password: str
     ) -> Tuple[bool, str, Optional[User]]:
-        """Authenticate a user with username and password."""
+        """
+        Authenticate user credentials.
+
+        Args:
+            username: Username or email
+            password: Plain text password
+
+        Returns:
+            Tuple of (success, message, user_object)
+        """
         try:
-            user = self.db.query(User).filter(User.username == username).first()
+            # Find user by username or email
+            user = (
+                self.db.query(User)
+                .filter((User.username == username) | (User.email == username))
+                .first()
+            )
 
             if not user:
                 return False, "Invalid username or password", None
 
-            if not user.is_active:
-                return False, "Account is deactivated", None
-
-            if not self.verify_password(password, user.password_hash):
+            # Check password
+            if not bcrypt.checkpw(
+                password.encode("utf-8"), user.password_hash.encode("utf-8")
+            ):
                 return False, "Invalid username or password", None
 
             # Update last login
             user.update_last_login()
             self.db.commit()
 
-            logger.info(f"User authenticated successfully: {username}")
+            logger.info(f"User authenticated successfully: {user.username}")
             return True, "Authentication successful", user
 
         except Exception as e:
-            logger.error(f"Error authenticating user: {e}")
-            return False, "Authentication failed", None
+            logger.error(f"Error during authentication: {e}")
+            return False, "Authentication service unavailable", None
 
     def verify_email(self, token: str) -> Tuple[bool, str]:
-        """Verify user email using verification token."""
+        """
+        Verify email using verification token.
+
+        Args:
+            token: Verification token
+
+        Returns:
+            Tuple of (success, message)
+        """
         try:
             user = self.db.query(User).filter(User.verification_token == token).first()
 
             if not user:
                 return False, "Invalid verification token"
 
-            if user.is_verified:
-                return False, "Email already verified"
-
             if user.is_verification_token_expired():
                 return False, "Verification token has expired"
 
-            # Mark user as verified
+            if user.is_verified:
+                return False, "Email already verified"
+
+            # Mark as verified
             user.mark_verified()
             self.db.commit()
 
-            logger.info(f"Email verified successfully for user: {user.username}")
+            logger.info(f"Email verified for user: {user.username}")
             return True, "Email verified successfully"
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error verifying email: {e}")
-            return False, "Email verification failed"
+            logger.error(f"Error during email verification: {e}")
+            return False, "Verification service unavailable"
 
-    def resend_verification_email(self, email: str) -> Tuple[bool, str]:
-        """Resend verification email to user."""
+    def get_user_by_verification_token(self, token: str) -> Optional[User]:
+        """Get user by verification token."""
         try:
-            user = self.db.query(User).filter(User.email == email).first()
-
-            if not user:
-                return False, "Email not found"
-
-            if user.is_verified:
-                return False, "Email already verified"
-
-            # Generate new verification token
-            verification_token = user.generate_verification_token()
-            self.db.commit()
-
-            logger.info(f"Verification email resent for user: {user.username}")
-            return True, "Verification email sent"
-
+            return self.db.query(User).filter(User.verification_token == token).first()
         except Exception as e:
-            self.db.rollback()
-            logger.error(f"Error resending verification email: {e}")
-            return False, "Failed to resend verification email"
+            logger.error(f"Error getting user by verification token: {e}")
+            return None
+
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        """Get user by email address."""
+        try:
+            return self.db.query(User).filter(User.email == email).first()
+        except Exception as e:
+            logger.error(f"Error getting user by email: {e}")
+            return None
+
+    def get_user_by_username(self, username: str) -> Optional[User]:
+        """Get user by username."""
+        try:
+            return self.db.query(User).filter(User.username == username).first()
+        except Exception as e:
+            logger.error(f"Error getting user by username: {e}")
+            return None
 
     def create_password_reset_token(
         self, email: str
     ) -> Tuple[bool, str, Optional[str]]:
-        """Create a password reset token for a user."""
+        """
+        Create password reset token for user.
+
+        Args:
+            email: User email address
+
+        Returns:
+            Tuple of (success, message, reset_token)
+        """
         try:
-            user = self.db.query(User).filter(User.email == email).first()
-
+            user = self.get_user_by_email(email)
             if not user:
-                return False, "Email not found", None
+                return False, "No account found with this email", None
 
-            if not user.is_active:
-                return False, "Account is deactivated", None
+            if not user.is_verified:
+                return False, "Please verify your email first", None
 
             # Generate reset token
-            reset_token = secrets.token_urlsafe(32)
-            expires_at = datetime.utcnow() + timedelta(hours=1)
+            reset_token = str(uuid.uuid4())
+            expires_at = datetime.utcnow() + timedelta(hours=1)  # 1 hour expiry
 
-            # Create or update reset token
-            existing_token = (
-                self.db.query(PasswordResetToken)
-                .filter(PasswordResetToken.user_id == user.id)
-                .first()
+            # Create reset token record
+            password_reset_token = PasswordResetToken(
+                user_id=user.id, token=reset_token, expires_at=expires_at
             )
 
-            if existing_token:
-                existing_token.token = reset_token
-                existing_token.expires_at = expires_at
-            else:
-                reset_token_obj = PasswordResetToken(
-                    user_id=user.id, token=reset_token, expires_at=expires_at
-                )
-                self.db.add(reset_token_obj)
-
+            self.db.add(password_reset_token)
             self.db.commit()
 
             logger.info(f"Password reset token created for user: {user.username}")
@@ -194,34 +213,46 @@ class UserService:
         except Exception as e:
             self.db.rollback()
             logger.error(f"Error creating password reset token: {e}")
-            return False, "Failed to create password reset token", None
+            return False, "Password reset service unavailable", None
 
     def reset_password(self, token: str, new_password: str) -> Tuple[bool, str]:
-        """Reset user password using reset token."""
+        """
+        Reset user password using reset token.
+
+        Args:
+            token: Password reset token
+            new_password: New plain text password
+
+        Returns:
+            Tuple of (success, message)
+        """
         try:
-            reset_token_obj = (
+            # Find reset token
+            reset_token = (
                 self.db.query(PasswordResetToken)
                 .filter(PasswordResetToken.token == token)
                 .first()
             )
 
-            if not reset_token_obj:
+            if not reset_token:
                 return False, "Invalid reset token"
 
-            if reset_token_obj.is_expired():
+            if reset_token.is_expired():
                 return False, "Reset token has expired"
 
-            # Update user password
-            user = (
-                self.db.query(User).filter(User.id == reset_token_obj.user_id).first()
-            )
+            # Get user
+            user = self.db.query(User).filter(User.id == reset_token.user_id).first()
             if not user:
                 return False, "User not found"
 
-            user.password_hash = self.hash_password(new_password)
+            # Hash new password
+            password_hash = bcrypt.hashpw(
+                new_password.encode("utf-8"), bcrypt.gensalt()
+            ).decode("utf-8")
+            user.password_hash = password_hash
 
-            # Remove reset token
-            self.db.delete(reset_token_obj)
+            # Delete reset token
+            self.db.delete(reset_token)
             self.db.commit()
 
             logger.info(f"Password reset successfully for user: {user.username}")
@@ -230,60 +261,63 @@ class UserService:
         except Exception as e:
             self.db.rollback()
             logger.error(f"Error resetting password: {e}")
-            return False, "Password reset failed"
+            return False, "Password reset service unavailable"
 
-    def get_user_by_id(self, user_id: int) -> Optional[User]:
-        """Get user by ID."""
-        return self.db.query(User).filter(User.id == user_id).first()
-
-    def get_user_by_username(self, username: str) -> Optional[User]:
-        """Get user by username."""
-        return self.db.query(User).filter(User.username == username).first()
-
-    def get_user_by_email(self, email: str) -> Optional[User]:
-        """Get user by email."""
-        return self.db.query(User).filter(User.email == email).first()
-
-    def update_user_profile(self, user_id: int, **kwargs) -> Tuple[bool, str]:
-        """Update user profile information."""
+    def create_user_session(self, user_id: int) -> Optional[str]:
+        """Create a new user session."""
         try:
-            user = self.get_user_by_id(user_id)
-            if not user:
-                return False, "User not found"
+            session_token = str(uuid.uuid4())
+            expires_at = datetime.utcnow() + timedelta(days=30)  # 30 day expiry
 
-            # Update allowed fields
-            allowed_fields = ["username", "email"]
-            for field, value in kwargs.items():
-                if field in allowed_fields and hasattr(user, field):
-                    setattr(user, field, value)
+            user_session = UserSession(
+                user_id=user_id, session_token=session_token, expires_at=expires_at
+            )
 
-            self.db.commit()
-            logger.info(f"User profile updated for user ID: {user_id}")
-            return True, "Profile updated successfully"
-
-        except IntegrityError as e:
-            self.db.rollback()
-            logger.error(f"Integrity error updating user profile: {e}")
-            return False, "Profile update failed due to database constraint"
-        except Exception as e:
-            self.db.rollback()
-            logger.error(f"Error updating user profile: {e}")
-            return False, "Profile update failed"
-
-    def deactivate_user(self, user_id: int) -> Tuple[bool, str]:
-        """Deactivate a user account."""
-        try:
-            user = self.get_user_by_id(user_id)
-            if not user:
-                return False, "User not found"
-
-            user.is_active = False
+            self.db.add(user_session)
             self.db.commit()
 
-            logger.info(f"User deactivated: {user.username}")
-            return True, "User deactivated successfully"
+            return session_token
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error deactivating user: {e}")
-            return False, "Failed to deactivate user"
+            logger.error(f"Error creating user session: {e}")
+            return None
+
+    def validate_session_token(self, token: str) -> Optional[User]:
+        """Validate session token and return user."""
+        try:
+            user_session = (
+                self.db.query(UserSession)
+                .filter(UserSession.session_token == token)
+                .first()
+            )
+
+            if not user_session or user_session.is_expired():
+                return None
+
+            return self.db.query(User).filter(User.id == user_session.user_id).first()
+
+        except Exception as e:
+            logger.error(f"Error validating session token: {e}")
+            return None
+
+    def revoke_session(self, token: str) -> bool:
+        """Revoke a user session."""
+        try:
+            user_session = (
+                self.db.query(UserSession)
+                .filter(UserSession.session_token == token)
+                .first()
+            )
+
+            if user_session:
+                self.db.delete(user_session)
+                self.db.commit()
+                return True
+
+            return False
+
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error revoking session: {e}")
+            return False

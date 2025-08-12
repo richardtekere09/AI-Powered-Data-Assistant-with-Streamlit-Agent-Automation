@@ -3,12 +3,76 @@ Email verification page for AI Data Assistant
 """
 
 import streamlit as st
+import sys
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Add parent directory to path for imports
+sys.path.append(str(Path(__file__).parent.parent))
+
+from config.database import get_db_session
 from services.user_service import UserService
 from services.email_service import EmailService
-from config.database import get_db_session
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Page config
+st.set_page_config(
+    page_title="Email Verification - AI Data Assistant", page_icon="📧", layout="wide"
+)
+
+
+def load_css():
+    """Load CSS styles."""
+    css_path = Path(__file__).parent.parent / "static" / "style.css"
+
+    if css_path.exists():
+        with open(css_path) as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    else:
+        # Fallback CSS
+        st.markdown(
+            """
+        <style>
+        .success-card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            padding: 2rem;
+            border-radius: 16px;
+            margin: 2rem auto;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #16A34A;
+        }
+        .error-card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            padding: 2rem;
+            border-radius: 16px;
+            margin: 2rem auto;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #DC2626;
+        }
+        .feature-card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        </style>
+        """,
+            unsafe_allow_html=True,
+        )
 
 
 def verify_email_token(token: str) -> tuple[bool, str, str]:
@@ -26,9 +90,13 @@ def verify_email_token(token: str) -> tuple[bool, str, str]:
                 user = user_service.get_user_by_verification_token(token)
                 if user:
                     # Send welcome email
-                    email_service.send_welcome_email(
-                        to_email=user.email, username=user.username
-                    )
+                    try:
+                        email_service.send_welcome_email(
+                            to_email=user.email, username=user.username
+                        )
+                    except Exception as e:
+                        logger.warning(f"Welcome email failed: {e}")
+
                     return True, message, user.username
                 else:
                     return True, message, "User"
@@ -43,28 +111,26 @@ def verify_email_token(token: str) -> tuple[bool, str, str]:
 def show_verification_success(username: str):
     """Show verification success message."""
     st.markdown(
-        """
-        <div class="status-container">
-            <div class="status-icon-large">🎉</div>
-            <h1 class="status-title-success">Email Verified Successfully!</h1>
-            <p class="status-description">
-                Welcome to AI Data Assistant, <strong>{username}</strong>!
-            </p>
+        f"""
+        <div class="success-card">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
+            <h1>Email Verified Successfully!</h1>
+            <p>Welcome to AI Data Assistant, <strong>{username}</strong>!</p>
         </div>
-        """.format(username=username),
+        """,
         unsafe_allow_html=True,
     )
 
-    # Success message
     st.success(
         "✅ Your email has been verified successfully! You can now log in to your account."
     )
+    st.balloons()
 
     # Next steps
     with st.expander("🚀 What's Next?", expanded=True):
         st.markdown("""
-        **1. Log In to Your Account**
-        - Use your username and password to sign in
+        **1. Sign In to Your Account**
+        - Use your username and password to log in
         - Access all the powerful features of AI Data Assistant
         
         **2. Upload Your First Dataset**
@@ -80,19 +146,12 @@ def show_verification_success(username: str):
     # Login button
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("Sign In Now", type="primary", use_container_width=True):
+        if st.button("🔐 Sign In Now", type="primary", use_container_width=True):
             st.switch_page("app.py")
 
     # Features preview
     st.markdown("---")
-    st.markdown(
-        """
-        <div class="centered-container">
-            <h2>✨ Ready to Transform Your Data Analysis?</h2>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("### ✨ Ready to Transform Your Data Analysis?")
 
     col1, col2, col3 = st.columns(3)
 
@@ -109,7 +168,7 @@ def show_verification_success(username: str):
         },
         {
             "icon": "🤖",
-            "title": "AI Insights",
+            "title": "AI-Powered Insights",
             "description": "Get intelligent recommendations and automated pattern recognition.",
         },
     ]
@@ -118,10 +177,10 @@ def show_verification_success(username: str):
         with col:
             st.markdown(
                 f"""
-                <div class="feature-display">
-                    <div class="feature-icon">{feature["icon"]}</div>
-                    <h3 class="feature-title">{feature["title"]}</h3>
-                    <p class="feature-description">{feature["description"]}</p>
+                <div class="feature-card">
+                    <div style="font-size: 2rem; text-align: center; margin-bottom: 1rem;">{feature["icon"]}</div>
+                    <h3 style="text-align: center; margin: 0 0 1rem 0;">{feature["title"]}</h3>
+                    <p style="text-align: center; margin: 0;">{feature["description"]}</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -132,15 +191,14 @@ def show_verification_error(message: str):
     """Show verification error message."""
     st.markdown(
         """
-        <div class="status-container">
-            <div class="status-icon-large">❌</div>
-            <h1 class="status-title-error">Verification Failed</h1>
+        <div class="error-card">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+            <h1>Verification Failed</h1>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Error message
     st.error(f"❌ {message}")
 
     # Help options
@@ -150,7 +208,7 @@ def show_verification_error(message: str):
         
         **1. Token Expired**
         - Verification links expire after 24 hours
-        - Request a new verification email from your account
+        - Request a new verification email
         
         **2. Invalid Token**
         - Make sure you clicked the complete link from your email
@@ -168,75 +226,37 @@ def show_verification_error(message: str):
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("Try Again", use_container_width=True):
+        if st.button("🔄 Try Again", use_container_width=True):
             st.rerun()
 
     with col2:
-        if st.button("Contact Support", use_container_width=True):
-            st.info(
-                "Please email support@aidataassistant.com with your email address and username."
-            )
-
-    # Alternative options
-    st.markdown("---")
-    st.markdown(
-        """
-        <div class="text-center">
-            <p>Don't have an account yet? 
-                <a href="auth/registration.py" target="_self" class="link-primary">
-                    Create one here
-                </a>
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def show_loading():
-    """Show loading state during verification."""
-    st.markdown(
-        """
-        <div class="status-container">
-            <div class="status-icon-large">⏳</div>
-            <h1>Verifying Your Email...</h1>
-            <p>Please wait while we verify your email address.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    with st.spinner("Verifying email..."):
-        st.info("Processing verification token...")
+        if st.button("🔐 Back to Login", use_container_width=True):
+            st.switch_page("app.py")
 
 
 def main():
     """Main email verification page function."""
-    st.set_page_config(
-        page_title="Email Verification - AI Data Assistant",
-        page_icon="📧",
-        layout="wide",
-    )
-
-    # CSS styles are loaded from external file
+    # Load CSS
+    load_css()
 
     # Get token from URL parameters
-    token = st.experimental_get_query_params().get("token", [None])[0]
+    query_params = st.experimental_get_query_params()
+    token = query_params.get("token", [None])[0]
 
     if not token:
         st.error(
             "❌ No verification token provided. Please check your email for the complete verification link."
         )
+
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🔐 Back to Login", use_container_width=True):
+                st.switch_page("app.py")
         st.stop()
 
     # Show loading state
-    show_loading()
-
-    # Verify the token
-    success, message, username = verify_email_token(token)
-
-    # Clear loading state
-    st.empty()
+    with st.spinner("🔍 Verifying your email..."):
+        success, message, username = verify_email_token(token)
 
     if success:
         show_verification_success(username)

@@ -5,6 +5,8 @@ User model for AI Data Assistant
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+
+# Import Base from database config to avoid circular imports
 from config.database import Base
 import uuid
 from datetime import datetime, timedelta
