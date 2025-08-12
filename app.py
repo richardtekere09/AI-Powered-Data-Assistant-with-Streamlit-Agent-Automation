@@ -8,7 +8,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 import sys
-
+import time
 # Add the current directory to the path to import our modules
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -425,7 +425,7 @@ def show_login_welcome():
     st.markdown(
         """
     <div class="welcome-card">
-        <h2>🚀 Get Started</h2>
+        <h2> Get Started</h2>
         <p>Sign in using the sidebar or create a new account to begin your data analysis journey with AI-powered insights.</p>
     </div>
     """,
@@ -579,7 +579,7 @@ def display_welcome_message(name):
     st.markdown(
         f"""
     <div class="welcome-card">
-        <h2>Welcome back, {name}! 🚀</h2>
+        <h2>Welcome back, {name}! </h2>
         <p>Your intelligent data analysis workspace is ready. Upload a dataset to unlock powerful insights and discover hidden patterns in your data.</p>
     </div>
     """,
@@ -636,17 +636,17 @@ def setup_sidebar(authenticator):
             # Logout button
             if hasattr(authenticator, "logout"):
                 # Database authenticator
-                authenticator.logout("🚪 Logout", location="sidebar")
+                authenticator.logout("Logout", location="sidebar")
             else:
                 # Config file authenticator
-                authenticator.logout("🚪 Logout", "sidebar")
+                authenticator.logout(" Logout", "sidebar")
 
             st.markdown("---")
 
         # File upload section (only show if authenticated)
         if st.session_state.authentication_status:
             st.markdown(
-                '<div style="color: white; font-weight: 700; font-size: 1.25rem; margin: 1rem 0;">📁 Data Upload</div>',
+                '<div style="color: black; font-weight: 700; font-size: 1.25rem; margin: 1rem 0;">📁 Data Upload</div>',
                 unsafe_allow_html=True,
             )
 
@@ -897,7 +897,7 @@ def handle_ai_analysis():
 
     # Analysis execution
     if (
-        st.button("🚀 Run Analysis", type="primary", use_container_width=True)
+        st.button(" Run Analysis", type="primary", use_container_width=True)
         and user_question
     ):
         if not GROQ_API_KEY:
@@ -981,7 +981,7 @@ def handle_quick_visualizations():
 def display_getting_started():
     """Display getting started section for users without data."""
     st.markdown(
-        '<div class="section-header">🚀 Getting Started</div>', unsafe_allow_html=True
+        '<div class="section-header"> Getting Started</div>', unsafe_allow_html=True
     )
 
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -1000,7 +1000,7 @@ def display_getting_started():
 
     # Platform capabilities
     st.markdown(
-        '<div class="section-header">✨ Platform Capabilities</div>',
+        '<div class="section-header">Platform Capabilities</div>',
         unsafe_allow_html=True,
     )
 
@@ -1090,12 +1090,25 @@ def display_footer():
         unsafe_allow_html=True,
     )
 
+def maintain_session():
+    """Maintain session state across page refreshes."""
+    # Force session persistence
+    if "session_id" not in st.session_state:
+        import uuid
+
+        st.session_state.session_id = str(uuid.uuid4())
+
+    # Prevent automatic logout
+    if st.session_state.get("authentication_status") == True:
+        # Keep session alive
+        st.session_state.last_activity = time.time()
 
 def main():
     """Main application function."""
     # Initialize session state
     initialize_session_state()
-
+    
+    maintain_session()
     # Handle authentication
     name, auth_status, username, authenticator = handle_authentication()
 
@@ -1103,7 +1116,7 @@ def main():
     if auth_status is False:
         st.error("❌ Username or password is incorrect")
         with st.sidebar:
-            if st.button("🔄 Try Again"):
+            if st.button(" Try Again"):
                 st.rerun()
         show_login_welcome()
         return
