@@ -33,13 +33,13 @@ services:
     ports:
       - "8501:8501"
     environment:
-      - DB_HOST=postgres
+      - DB_HOST=
       - DB_PORT=5432
-      - DB_NAME=ai_data_assistant
+      - DB_NAME=
       - DB_USER=postgres
-      - DB_PASSWORD=postgres123
+      - DB_PASSWORD=
       - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_PORT=
     depends_on:
       postgres:
         condition: service_healthy
