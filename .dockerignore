@@ -1,0 +1,103 @@
+# Ignore sensitive files
+.env
+.env.local
+.env.production
+
+# Ignore Git
+.git
+.gitignore
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Ignore logs
+*.log
+logs/
+log/
+
+# Ignore temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Ignore test files
+tests/
+test/
+*_test.py
+test_*.py
+
+# Ignore documentation
+*.md
+docs/
+doc/
+
+# Ignore backup files
+*.backup
+*.bak
+backups/
+
+# Ignore data files (unless needed in container)
+data/
+uploads/
+*.csv
+*.xlsx
+*.xls
+
+# Ignore build artifacts
+build/
+dist/
+*.egg-info/
+
+# Ignore virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Ignore node modules (if any)
+node_modules/
+
+# Ignore debug and setup files
+debug_*.py
+setup_*.py
+fix_*.py
+verify_*.py
+test_*.py
+navigation_fix.py
+
+# Ignore Docker files not needed in image
+Dockerfile.dev
+docker-compose.dev.yml
+docker-compose.override.yml
+
+# Ignore package files created for sharing
+ai-data-assistant-package/
+*.tar.gz
+*.zip
+
+# Ignore sensitive or personal files
+paste.txt
+secrets.txt
+credentials.json

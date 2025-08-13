@@ -9,7 +9,8 @@ python-dotenv
 schedule
 toml
 groq
-streamlit-authenticator==0.3.2 "passlib[bcrypt]" 
+streamlit-authenticator==0.3.2
+passlib[bcrypt]>=1.7.4
 langchain-groq
 python-jose[cryptography]
 emails

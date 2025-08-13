@@ -77,3 +77,8 @@ htmlcov/
 config
 fix_admins.py
 docker-compose-one.yml
+env_template.py
+create-complete-package.sh
+env_template
+# Ignore Python cache
+__pycache__/

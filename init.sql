@@ -47,7 +47,20 @@ CREATE INDEX IF NOT EXISTS idx_verification_tokens ON email_verification_tokens(
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens ON password_reset_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_user_sessions ON user_sessions(session_token);
 
--- Insert default admin user (password: admin123)
+-- Insert admin user (password: admin123)
+-- Hash generated with bcrypt for 'admin123'
 INSERT INTO users (username, email, password_hash, is_verified, is_active) 
-VALUES ('admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj3bp.gS8v1O', TRUE, TRUE)
+VALUES ('admin', 'admin@example.com', '$2b$12$MoFOR7EzFoBpBwrSjwjNaOF/U4pJqhhsKCFzIKaHJFWLiG5F8aEj6', TRUE, TRUE)
+ON CONFLICT (username) DO NOTHING;
+
+-- Insert richard user (password: richard09) 
+-- Hash generated with bcrypt for 'richard09'
+INSERT INTO users (username, email, password_hash, is_verified, is_active) 
+VALUES ('richard', 'richardtekere02@gmail.com', '$2b$12$190Rw3xIBpqGIAUr7mkEPuW/1wXAuZPElEDeA8BQ7pz3u93yPnWlS', TRUE, TRUE)
+ON CONFLICT (username) DO NOTHING;
+
+-- Insert a test user (password: test123)
+-- Hash generated with bcrypt for 'test123'
+INSERT INTO users (username, email, password_hash, is_verified, is_active) 
+VALUES ('testuser', 'test@example.com', '$2b$12$qdy3UQcWFXSRlM7gYbnLaOw/q50Jl0lhj5Ymyhp1D74h7a24xQ/vu', TRUE, TRUE)
 ON CONFLICT (username) DO NOTHING;
