@@ -53,12 +53,6 @@ INSERT INTO users (username, email, password_hash, is_verified, is_active)
 VALUES ('admin', 'admin@example.com', '$2b$12$MoFOR7EzFoBpBwrSjwjNaOF/U4pJqhhsKCFzIKaHJFWLiG5F8aEj6', TRUE, TRUE)
 ON CONFLICT (username) DO NOTHING;
 
--- Insert richard user (password: richard09) 
--- Hash generated with bcrypt for 'richard09'
-INSERT INTO users (username, email, password_hash, is_verified, is_active) 
-VALUES ('richard', 'richardtekere02@gmail.com', '$2b$12$190Rw3xIBpqGIAUr7mkEPuW/1wXAuZPElEDeA8BQ7pz3u93yPnWlS', TRUE, TRUE)
-ON CONFLICT (username) DO NOTHING;
-
 -- Insert a test user (password: test123)
 -- Hash generated with bcrypt for 'test123'
 INSERT INTO users (username, email, password_hash, is_verified, is_active) 
