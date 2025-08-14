@@ -58,7 +58,6 @@ The application comes with pre-configured test accounts:
 | Username | Password | Role | Description |
 |----------|----------|------|-------------|
 | `admin` | `admin123` | Administrator | Full access to all features |
-| `richard` | `richard09` | Power User | Standard user with full analysis capabilities |
 | `testuser` | `test123` | Test Account | Basic user for testing |
 
 ## ⚙️ Configuration
@@ -121,21 +120,6 @@ Try these example questions:
 "Find outliers in the price data"
 "Generate a correlation matrix"
 ```
-
-## 📊 Sample Data for Testing
-
-If you don't have data ready, create a simple CSV file:
-
-```csv
-Name,Age,Salary,Department,Experience
-John,25,50000,IT,2
-Sarah,30,65000,Marketing,5
-Mike,35,75000,IT,8
-Lisa,28,55000,Sales,3
-Tom,32,70000,Marketing,6
-```
-
-Save as `sample_data.csv` and upload to test all features.
 
 ## 🛠️ Management Commands
 
@@ -326,7 +310,6 @@ docker-compose down -v
 
 ### Default Credentials
 - **admin** / admin123
-- **richard** / richard09
 - **testuser** / test123
 
 ---
